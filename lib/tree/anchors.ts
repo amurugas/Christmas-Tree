@@ -55,9 +55,10 @@ export function requiredReach(tierIndex: number, rimRadius: number, tiers: reado
 export function createTreeAnchors(count = TREE_SLOT_COUNT, tiers: readonly ConeTier[] = TREE_TIERS): TreeAnchor[] {
   const anchors: TreeAnchor[] = [];
 
-  // Top ring first, keeping the original one-based slot order.
+  // Keep the original seven ornament rings and slot positions stable;
+  // additional crown tiers add height above them without moving uploads.
   for (let ridge = 0; ridge < ORNAMENTS_PER_RIDGE.length && anchors.length < count; ridge += 1) {
-    const tierIndex = tiers.length - 1 - ridge;
+    const tierIndex = Math.min(tiers.length, ORNAMENTS_PER_RIDGE.length) - 1 - ridge;
     const tier = tiers[tierIndex];
     const capacity = ORNAMENTS_PER_RIDGE[ridge];
     const stagger = ridge % 2 === 0 ? 0 : Math.PI / capacity;

@@ -1,6 +1,7 @@
 "use client";
 
 import { type KeyboardEvent, type PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ShootingStar } from "@/components/tree/shooting-star";
 import { HolidayMusic } from "@/components/tree/holiday-music";
 import { ForestWaldo } from "@/components/tree/forest-waldo";
 import { SnowCanvas } from "@/components/tree/snow-canvas";
@@ -20,7 +21,7 @@ type Ornament = {
 /** Pointer travel (CSS px) after which a press counts as a spin, not a click. */
 const DRAG_THRESHOLD = 6;
 
-export function TreeExperience({ ornaments }: { ornaments: Ornament[] }) {
+export function TreeExperience({ ornaments, arrivalId }: { ornaments: Ornament[]; arrivalId?: string | null }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<TreeScene | null>(null);
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
@@ -58,8 +59,8 @@ export function TreeExperience({ ornaments }: { ornaments: Ornament[] }) {
 
   useEffect(() => {
     latestOrnaments.current = visibleOrnaments;
-    sceneRef.current?.sync(visibleOrnaments);
-  }, [visibleOrnaments]);
+    sceneRef.current?.sync(visibleOrnaments, arrivalId);
+  }, [visibleOrnaments, arrivalId]);
 
   useEffect(() => {
     sceneRef.current?.zoom(zoom);
@@ -72,7 +73,7 @@ export function TreeExperience({ ornaments }: { ornaments: Ornament[] }) {
   }, [autoMessageId]);
 
   const adjustZoom = (delta: number) => {
-    setZoom((current) => Math.max(1, Math.min(1.4, Math.round((current + delta) * 100) / 100)));
+    setZoom((current) => Math.max(1, Math.min(1.3, Math.round((current + delta) * 100) / 100)));
   };
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -108,7 +109,8 @@ export function TreeExperience({ ornaments }: { ornaments: Ornament[] }) {
   };
 
   return (
-    <main className="tree-backdrop relative min-h-[100svh] overflow-hidden text-[#234238]">
+    <main className="tree-backdrop relative min-h-[100svh] overflow-hidden text-[#fff4e8]">
+      <ShootingStar />
       <ForestWaldo />
       <SnowCanvas className="pointer-events-none absolute inset-0 z-0 h-full w-full" />
 
@@ -166,10 +168,10 @@ export function TreeExperience({ ornaments }: { ornaments: Ornament[] }) {
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-6 p-5 sm:p-8">
         <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#667b70]">Our community tree</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-[#e3d2c7]">MKA community tree</p>
           <h1 className="mt-2 font-serif text-2xl tracking-[-0.03em] sm:text-4xl">Made brighter together.</h1>
         </div>
-        <p className="max-w-40 text-right text-[11px] leading-relaxed text-[#536b62] sm:max-w-60 sm:text-xs">
+        <p className="max-w-40 text-right text-[11px] leading-relaxed text-[#f0e4df]/85 sm:max-w-60 sm:text-xs">
           Drag sideways to spin the tree · tap an ornament to see who made it
         </p>
       </header>
@@ -187,7 +189,7 @@ export function TreeExperience({ ornaments }: { ornaments: Ornament[] }) {
           −
         </button>
         <span aria-live="polite" className="w-10 text-center text-[10px] tabular-nums">{Math.round(zoom * 100)}%</span>
-        <button type="button" aria-label="Zoom in" disabled={zoom >= 1.4}
+        <button type="button" aria-label="Zoom in" disabled={zoom >= 1.3}
           onClick={() => adjustZoom(0.05)}
           className="flex h-9 w-9 items-center justify-center rounded-full text-xl transition hover:bg-white/70 focus-visible:outline-2 focus-visible:outline-[#426052] disabled:opacity-30">
           +
@@ -197,8 +199,8 @@ export function TreeExperience({ ornaments }: { ornaments: Ornament[] }) {
       <footer className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-4 p-5 sm:p-8">
         <div className="max-w-[70vw]">
           <p aria-live="polite" className="sr-only">{status}</p>
-          <p className="font-serif text-[11px] italic tracking-[0.025em] text-[#58665e]/65 sm:text-xs">
-            Merry Christmas from Adv Geometry
+          <p className="font-serif text-[9px] italic tracking-[0.025em] text-[#58665e]/65 sm:text-[10px]">
+            Happy Holidays from Adv Geom TST
           </p>
         </div>
         <span className="rounded-full border border-[#547064]/20 bg-white/65 px-3 py-1.5 text-[10px] font-medium uppercase tracking-[0.15em] text-[#426052] backdrop-blur">

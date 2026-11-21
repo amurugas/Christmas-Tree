@@ -3,19 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { Music2, VolumeX } from "lucide-react";
 
-// A gentle bell arrangement of the public-domain Jingle Bells melody.
-// Notes are synthesized locally; no audio download or third-party service.
+// A gentle, unaccompanied arrangement of the traditional GLORIA melody.
+// Source: https://thewordalone.org/worship/angels-we-have-heard-on-high-gloria
+// Transposed to C major; synthesized locally without an audio download.
 const MELODY: readonly (readonly [number, number])[] = [
-  [64, 1], [64, 1], [64, 2], [64, 1], [64, 1], [64, 2],
-  [64, 1], [67, 1], [60, 1.5], [62, 0.5], [64, 4],
-  [65, 1], [65, 1], [65, 1.5], [65, 0.5],
-  [65, 1], [64, 1], [64, 1], [64, 0.5], [64, 0.5],
-  [64, 1], [62, 1], [62, 1], [64, 1], [62, 2], [67, 2],
-  [64, 1], [64, 1], [64, 2], [64, 1], [64, 1], [64, 2],
-  [64, 1], [67, 1], [60, 1.5], [62, 0.5], [64, 4],
-  [65, 1], [65, 1], [65, 1.5], [65, 0.5],
-  [65, 1], [64, 1], [64, 1], [64, 0.5], [64, 0.5],
-  [67, 1], [67, 1], [65, 1], [62, 1], [60, 4],
+  [64, 1], [64, 1], [64, 1], [67, 1], [67, 1.5], [65, 0.5], [64, 2], [64, 1],
+  [62, 1], [64, 1], [67, 1], [64, 1.5], [62, 0.5], [60, 2], [64, 1], [64, 1],
+  [64, 1], [67, 1], [67, 1.5], [65, 0.5], [64, 2], [64, 1], [62, 1], [64, 1],
+  [67, 1], [64, 1.5], [62, 0.5], [60, 2], [67, 2], [69, 0.5], [67, 0.5], [65, 0.5],
+  [64, 0.5], [65, 2], [67, 0.5], [65, 0.5], [64, 0.5], [62, 0.5], [64, 2], [65, 0.5],
+  [64, 0.5], [62, 0.5], [60, 0.5], [62, 1.5], [55, 0.5], [55, 2], [60, 1], [62, 1],
+  [64, 1], [65, 1], [64, 2], [62, 1], [0, 1], [67, 2], [69, 0.5], [67, 0.5],
+  [65, 0.5], [64, 0.5], [65, 2], [67, 0.5], [65, 0.5], [64, 0.5], [62, 0.5], [64, 2],
+  [65, 0.5], [64, 0.5], [62, 0.5], [60, 0.5], [62, 1.5], [55, 0.5], [55, 2], [60, 1],
+  [62, 1], [64, 1], [65, 1], [64, 2], [62, 2], [60, 4],
 ];
 
 function createMusic() {
@@ -49,7 +50,7 @@ function createMusic() {
   function schedule() {
     while (nextAt < context.currentTime + 1.5) {
       const [note, beats] = MELODY[index];
-      bell(note, nextAt, Math.min(beats * beat, 1.8));
+      if (note > 0) bell(note, nextAt, Math.min(beats * beat, 1.8));
       nextAt += beats * beat;
       index += 1;
       if (index === MELODY.length) {
@@ -124,9 +125,9 @@ export function HolidayMusic() {
     <div className="absolute bottom-36 right-5 z-20 sm:right-8">
       <button
         type="button"
-        aria-label={playing ? "Turn off holiday music" : "Turn on holiday music"}
+        aria-label={playing ? "Turn off Angels We Have Heard on High" : "Play Angels We Have Heard on High"}
         aria-pressed={playing}
-        title={playing ? "Music off" : "Play a quiet holiday jingle"}
+        title={playing ? "Turn music off" : "Angels We Have Heard on High — soft bells"}
         onClick={() => void toggle()}
         className="flex h-10 w-10 items-center justify-center rounded-full border border-[#547064]/20 bg-white/65 text-[#426052] shadow-sm backdrop-blur transition hover:bg-white/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#426052]"
       >

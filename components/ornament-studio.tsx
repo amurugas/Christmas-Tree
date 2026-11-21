@@ -88,7 +88,7 @@ function ConversionReport({ file, result }: { file: File; result: PreparedGlb })
   );
 }
 
-export function OrnamentStudio({ onOrnamentsChange }: { onOrnamentsChange?: (ornaments: PublicOrnament[]) => void }) {
+export function OrnamentStudio({ onOrnamentsChange, onOrnamentUploaded }: { onOrnamentsChange?: (ornaments: PublicOrnament[]) => void; onOrnamentUploaded?: (id: string) => void }) {
   const [initials, setInitials] = useState("");
   const [message, setMessage] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -179,6 +179,7 @@ export function OrnamentStudio({ onOrnamentsChange }: { onOrnamentsChange?: (orn
     setUploading(true); setProgress(0);
     try {
       const ornament = await upload(initials, message, file, setProgress);
+      onOrnamentUploaded?.(ornament.id);
       setSuccess(ornament); setProgress(100); setFile(null); setConversion({ status: "idle" }); setInitials(""); setMessage("");
       if (inputRef.current) inputRef.current.value = "";
       await loadOrnaments();

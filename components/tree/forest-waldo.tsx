@@ -12,7 +12,7 @@ export function ForestWaldo() {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     let timer: ReturnType<typeof setTimeout>;
     let stopped = false;
-    const schedule = () => {
+    const schedule = (delay = 170000) => {
       timer = setTimeout(() => {
         if (stopped) return;
         if (document.hidden || motion.matches) {
@@ -26,9 +26,9 @@ export function ForestWaldo() {
           setPeek((current) => ({ ...current, visible: false }));
           schedule();
         }, 10000);
-      }, 290000);
+      }, delay);
     };
-    schedule();
+    schedule(60000);
     return () => {
       stopped = true;
       clearTimeout(timer);
@@ -61,8 +61,8 @@ export function ForestWaldo() {
           </g>
           <path d="m44 49 4 1m-8 4q4 3 8-1" stroke="#936252" strokeWidth="1.3" strokeLinecap="round" />
         </g>
-        <path d="M23 123V55" stroke="#9299a1" strokeWidth="5" />
-        <path d="m24 7-16 30h9L0 63h12L-9 93H6l-17 25h70L42 93h14L36 63h12L31 37h9Z" fill="#b5bdc6" />
+        <path d="M23 123V55" stroke="#5d667c" strokeWidth="5" />
+        <path d="m24 7-16 30h9L0 63h12L-9 93H6l-17 25h70L42 93h14L36 63h12L31 37h9Z" fill="#626f87" />
       </svg>
     </div>
   );

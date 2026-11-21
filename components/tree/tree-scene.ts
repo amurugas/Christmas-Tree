@@ -34,6 +34,7 @@ import {
   Vector2,
   WebGLRenderer,
 } from "three";
+import { addWinterDetails, createArrivalSparkles } from "@/components/tree/winter-details";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { TREE_ANCHORS, type TreeAnchor } from "@/lib/tree/anchors";
@@ -52,7 +53,7 @@ import { createLoadQueue } from "@/lib/tree/load-queue";
 import { prepareOrnamentModel } from "@/lib/tree/model";
 import { beginDrag, createSpinState, dragBy, endDrag, nudge, stepSpin } from "@/lib/tree/spin";
 
-export type SceneOrnament = { id: string; slot: number; modelUrl: string; message?: string };
+export type SceneOrnament = { id: string; slot: number; modelUrl: string; message?: string; initials?: string };
 
 export type TreeSceneStats = {
   calls: number;
@@ -63,7 +64,7 @@ export type TreeSceneStats = {
 };
 
 export type TreeScene = {
-  sync(ornaments: readonly SceneOrnament[]): void;
+  sync(ornaments: readonly SceneOrnament[], arrivalId?: string | null): void;
   pointerDown(x: number): void;
   pointerMove(x: number): void;
   pointerUp(): void;
@@ -79,6 +80,7 @@ type SlotEntry = {
   group: Group;
   model: Object3D | null;
   state: "pending" | "loaded" | "failed";
+  celebrate: boolean;
 };
 
 const PLACEHOLDER_PALETTE = ["#b51f32", "#e3b74f", "#d8e4eb", "#276451", "#c5352e"];
@@ -339,14 +341,14 @@ function addFoliage(tree: Group, occluders: Object3D[], onTextureReady: () => vo
 function addWinterGround(scene: Scene) {
   const ground = new Mesh(
     new PlaneGeometry(200, 200),
-    new MeshBasicMaterial({ color: "#f5e9e2" }),
+    new MeshBasicMaterial({ color: "#c2c5d4" }),
   );
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = GROUND_Y - 0.015;
   scene.add(ground);
   const contactShadows = new Mesh(
     new PlaneGeometry(200, 200),
-    new ShadowMaterial({ color: "#77718b", opacity: 0.23 }),
+    new ShadowMaterial({ color: "#53566f", opacity: 0.28 }),
   );
   contactShadows.rotation.x = -Math.PI / 2;
   contactShadows.position.y = GROUND_Y - 0.01;
@@ -486,6 +488,7 @@ export function createTreeScene(options: {
   const scene = new Scene();
 
   const camera = new PerspectiveCamera(FOV, 1, 1, 200);
+  camera.zoom = 1.25;
   const renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
   renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -498,10 +501,10 @@ export function createTreeScene(options: {
 
   // Lights live in the scene, not the spinning tree, and the camera never
   // moves, so shading stays put while the tree turns.
-  scene.add(new AmbientLight("#f4d6c4", 0.65));
-  scene.add(new HemisphereLight("#ebdeeb", "#777d91", 0.95));
-  const key = new DirectionalLight("#ffd09b", 2.8);
-  key.position.set(9, 7, -3);
+  scene.add(new AmbientLight("#b2b6d4", 0.5));
+  scene.add(new HemisphereLight("#b9bddd", "#636b83", 0.75));
+  const key = new DirectionalLight("#efb58b", 1.65);
+  key.position.set(9, 5, -3);
   key.castShadow = true;
   key.shadow.mapSize.set(1024, 1024);
   key.shadow.camera.left = -10;
@@ -512,16 +515,20 @@ export function createTreeScene(options: {
   key.shadow.camera.far = 32;
   key.shadow.bias = -0.0008;
   scene.add(key);
-  const fill = new DirectionalLight("#b6c8df", 0.8);
+  const fill = new DirectionalLight("#a0b6df", 0.65);
   fill.position.set(-8, 3, -2);
   scene.add(fill);
 
   const tree = new Group();
   scene.add(tree);
   addWinterGround(scene);
+  const winterDetails = addWinterDetails(scene);
   const occluders: Object3D[] = [];
   let dirty = true;
-  addFoliage(tree, occluders, () => { dirty = true; });
+  const canopy = new Group();
+  tree.add(canopy);
+  addFoliage(canopy, occluders, () => { dirty = true; });
+  const sparkles = createArrivalSparkles(canopy);
   addGifts(tree);
 
   // Placeholders and hooks are instanced per slot: two draw calls for all 60.
@@ -553,7 +560,7 @@ export function createTreeScene(options: {
     TREE_ANCHORS.length,
   );
   bells.frustumCulled = icicles.frustumCulled = caps.frustumCulled = false;
-  tree.add(bells, icicles, caps);
+  canopy.add(bells, icicles, caps);
   const placeholderColour = new Color();
   for (let i = 0; i < TREE_ANCHORS.length; i += 1) {
     placeholders.setMatrixAt(i, zeroMatrix);
@@ -562,7 +569,7 @@ export function createTreeScene(options: {
   }
   // Instances move around the whole tree; skip per-object culling.
   placeholders.frustumCulled = hooks.frustumCulled = false;
-  tree.add(placeholders, hooks);
+  canopy.add(placeholders, hooks);
 
   const scratch = new Matrix4();
   const scratchQuat = new Quaternion();
@@ -575,16 +582,17 @@ export function createTreeScene(options: {
     scratchQuat.setFromUnitVectors(up, direction.normalize());
     return scratch.compose(tip.add(eyelet).multiplyScalar(0.5), scratchQuat, new Vector3(1, length, 1));
   };
-  const setPlaceholder = (anchor: TreeAnchor, visible: boolean) => {
+  const setPlaceholder = (anchor: TreeAnchor, visible: boolean, sway = 0) => {
     const index = anchor.slot - 1;
     const kind = index % 3;
+    const centerX = anchor.position[0] + Math.sin(sway) * PLACEHOLDER_RADIUS;
     const centerY = anchor.position[1] - PLACEHOLDER_RADIUS - 0.04;
     placeholders.setMatrixAt(index, visible && kind === 0
-      ? scratch.makeTranslation(anchor.position[0], centerY, anchor.position[2]) : zeroMatrix);
+      ? scratch.makeRotationZ(sway).setPosition(centerX, centerY, anchor.position[2]) : zeroMatrix);
     bells.setMatrixAt(index, visible && kind === 1
-      ? scratch.makeTranslation(anchor.position[0], centerY, anchor.position[2]) : zeroMatrix);
+      ? scratch.makeRotationZ(sway).setPosition(centerX, centerY, anchor.position[2]) : zeroMatrix);
     icicles.setMatrixAt(index, visible && kind === 2
-      ? scratch.makeTranslation(anchor.position[0], centerY - 0.02, anchor.position[2]) : zeroMatrix);
+      ? scratch.makeRotationZ(sway).setPosition(centerX, centerY - 0.02, anchor.position[2]) : zeroMatrix);
     caps.setMatrixAt(index, visible
       ? scratch.makeTranslation(anchor.position[0], anchor.position[1] - 0.045, anchor.position[2]) : zeroMatrix);
     for (const mesh of [placeholders, bells, icicles, caps]) mesh.instanceMatrix.needsUpdate = true;
@@ -627,6 +635,7 @@ export function createTreeScene(options: {
         entry.state = "loaded";
         entry.group.add(model);
         setPlaceholder(entry.anchor, false);
+        if (entry.celebrate && !reducedMotion) sparkles.burst(entry.anchor.position);
         dirty = true;
       } catch (error) {
         if (signal.aborted) return;
@@ -644,7 +653,7 @@ export function createTreeScene(options: {
     queue.cancel(entry.ornament.id);
     slots.delete(slot);
     lastRevealed.delete(entry.ornament.id);
-    tree.remove(entry.group);
+    canopy.remove(entry.group);
     if (entry.model) disposeObject(entry.model);
     if (entry.state === "failed") failed -= 1;
     setPlaceholder(entry.anchor, true);
@@ -652,7 +661,7 @@ export function createTreeScene(options: {
     dirty = true;
   };
 
-  const sync = (ornaments: readonly SceneOrnament[]) => {
+  const sync = (ornaments: readonly SceneOrnament[], arrivalId?: string | null) => {
     const wanted = new Map<number, SceneOrnament>();
     for (const ornament of ornaments) {
       if (TREE_ANCHORS[ornament.slot - 1]) wanted.set(ornament.slot, ornament);
@@ -667,8 +676,8 @@ export function createTreeScene(options: {
       const group = new Group();
       group.position.set(...anchor.position);
       group.rotation.y = anchor.rotationY;
-      tree.add(group);
-      const entry: SlotEntry = { ornament, anchor, group, model: null, state: "pending" };
+      canopy.add(group);
+      const entry: SlotEntry = { ornament, anchor, group, model: null, state: "pending", celebrate: ornament.id === arrivalId };
       slots.set(slot, entry);
       setPlaceholder(anchor, true);
       setHook(anchor, true);
@@ -760,6 +769,23 @@ export function createTreeScene(options: {
     const dt = Math.min((now - last) / 1000, 0.1);
     last = now;
     if (stepSpin(spin, dt, !reducedMotion)) dirty = true;
+    const time = now / 1000;
+    if (!reducedMotion) {
+      canopy.rotation.z = Math.sin(time * 0.45) * 0.003;
+      canopy.rotation.x = Math.sin(time * 0.32 + 1) * 0.0015;
+      for (const entry of slots.values()) {
+        entry.group.rotation.z = Math.sin(time * 0.85 + entry.anchor.slot * 1.7) * 0.035;
+        entry.group.rotation.x = Math.sin(time * 0.63 + entry.anchor.slot) * 0.018;
+      }
+      for (const anchor of TREE_ANCHORS) {
+        if (slots.get(anchor.slot)?.state !== "loaded") {
+          setPlaceholder(anchor, true, Math.sin(time * 0.85 + anchor.slot * 1.7) * 0.035);
+        }
+      }
+      winterDetails.update(time);
+      dirty = true;
+    }
+    if (sparkles.update(time)) dirty = true;
     if (!dirty) return;
     dirty = false;
     tree.rotation.y = spin.angle;
@@ -793,7 +819,7 @@ export function createTreeScene(options: {
       nudge(spin, direction);
     },
     zoom(value) {
-      camera.zoom = Math.max(1, Math.min(1.4, value));
+      camera.zoom = 1.25 * Math.max(1, Math.min(1.3, value));
       camera.updateProjectionMatrix();
       dirty = true;
     },

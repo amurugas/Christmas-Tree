@@ -113,7 +113,7 @@ html {
 
 /* A still snowy forest behind the transparent WebGL tree and falling snow. */
 .tree-backdrop {
-  background-color: #f5e9e2;
+  background-color: #c2c5d4;
   background-image: url("/white-forest.svg");
   background-position: center;
   background-size: cover;
@@ -145,4 +145,22 @@ html {
 }
 @media (prefers-reduced-motion: reduce) {
   .forest-waldo { display: none; }
+}
+
+.shooting-star {
+  width: 90px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #fff0ca);
+  box-shadow: 3px 0 6px rgb(255 227 164 / 45%);
+  animation: shooting-star-pass 2.4s ease-out both;
+}
+@keyframes shooting-star-pass {
+  0% { opacity: 0; transform: rotate(24deg) translateX(0); }
+  15% { opacity: 0.85; }
+  75% { opacity: 0.5; }
+  100% { opacity: 0; transform: rotate(24deg) translateX(360px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shooting-star { display: none; }
 }

@@ -1,7 +1,6 @@
 /**
- * Shared, framework-free description of the tree's foliage and the ornament
- * scale. The scene builds its cones from these numbers and the anchors are
- * derived from them, so the two can never drift apart.
+ * Shared, framework-free foliage envelopes and ornament scale. Branches,
+ * hanging anchors, and camera framing derive from the same tier dimensions.
  *
  * Coordinates are tree-local scene units, Y-up, with the tree's axis at x = z = 0.
  * Angles around the trunk use `atan2(x, z)` (0 faces +Z), which is the
@@ -30,7 +29,7 @@ export type ConeTier = {
   rotationY: number;
 };
 
-const TIER_COUNT = 7;
+const TIER_COUNT = 8;
 const LOWEST_RADIUS = 4;
 const RADIUS_STEP = 0.36;
 const LOWEST_HEIGHT = 2;
